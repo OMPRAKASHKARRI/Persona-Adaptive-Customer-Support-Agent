@@ -1,0 +1,7 @@
+Billing disputes require human review.
+
+Refund requests are reviewed within 5 business days.
+
+Unexpected charges must be escalated to the billing team.
+
+Customers should provide invoice information during escalation.

@@ -1,0 +1,5 @@
+Refund requests are eligible within 30 days.
+
+Refund approval depends on account status and subscription type.
+
+Refund-related issues require escalation to a human representative.
