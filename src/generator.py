@@ -1,12 +1,12 @@
 import os
 
 from dotenv import load_dotenv
-from google import genai
+from groq import Groq
 
 load_dotenv()
 
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 
@@ -22,14 +22,16 @@ def fallback_response(
 Technical Expert Response
 
 Relevant Context:
+{context[:500]}
 
-{context[:400]}
+Root Cause:
+Please review the retrieved documentation.
 
 Recommended Actions:
-
 1. Review logs
 2. Validate configuration
-3. Follow troubleshooting steps in documentation
+3. Follow troubleshooting steps
+4. Escalate if issue persists
 """
 
     elif persona == "Business Executive":
@@ -41,10 +43,13 @@ Issue Summary:
 {user_query}
 
 Business Impact:
-Potential operational disruption.
+Potential operational disruption if unresolved.
 
 Recommendation:
-Review the retrieved support documentation and assign to the support team if unresolved.
+Review support documentation and assign to support team for further investigation.
+
+Expected Resolution:
+Dependent on support team review.
 """
 
     else:
@@ -54,9 +59,14 @@ I understand this issue may be frustrating.
 
 Based on our documentation:
 
-{context[:400]}
+{context[:500]}
 
-Please follow the recommended troubleshooting steps. If the issue persists, we will escalate it to a support specialist.
+Recommended Actions:
+1. Follow the documented troubleshooting steps.
+2. Retry the operation.
+3. Contact support if the issue continues.
+
+We are here to help.
 """
 
 
@@ -68,55 +78,89 @@ def generate_response(
 
     context = "\n\n".join(retrieved_docs)
 
-    try:
+    if persona == "Technical Expert":
 
-        if persona == "Technical Expert":
-
-            persona_prompt = """
+        persona_prompt = """
 You are a Senior Technical Support Engineer.
 
-Provide:
-- Root Cause
+Response Requirements:
+- Root Cause Analysis
 - Technical Explanation
-- Troubleshooting Steps
+- Step-by-step Troubleshooting
+- Configuration Guidance
+
+Be detailed and technical.
+Only use the provided context.
+Do not invent information.
 """
 
-        elif persona == "Frustrated User":
+    elif persona == "Frustrated User":
 
-            persona_prompt = """
-You are an empathetic support specialist.
+        persona_prompt = """
+You are an empathetic customer support specialist.
 
-Use empathy and simple language.
+Response Requirements:
+- Start with empathy
+- Use simple language
+- Reassure the customer
+- Provide action-oriented steps
+
+Only use the provided context.
+Do not invent information.
 """
 
-        else:
+    else:
 
-            persona_prompt = """
+        persona_prompt = """
 You are a business support manager.
 
-Focus on business impact and timelines.
+Response Requirements:
+- Focus on business impact
+- Keep response concise
+- Mention expected resolution guidance
+- Avoid excessive technical jargon
+
+Only use the provided context.
+Do not invent information.
 """
 
-        prompt = f"""
+    prompt = f"""
 {persona_prompt}
 
-CONTEXT:
+SUPPORT KNOWLEDGE BASE:
+
 {context}
 
-QUESTION:
+CUSTOMER QUESTION:
+
 {user_query}
+
+Generate a response using only the provided knowledge base content.
 """
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
+    try:
+
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=800
         )
 
-        return response.text
+        result = response.choices[0].message.content
+
+        print("Groq response generated successfully")
+
+        return result.strip()
 
     except Exception as e:
 
-        print(f"Gemini Generator Error: {e}")
+        print(f"Groq Generator Error: {e}")
         print("Using fallback response...")
 
         return fallback_response(

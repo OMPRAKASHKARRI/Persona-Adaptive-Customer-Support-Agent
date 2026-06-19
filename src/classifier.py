@@ -2,12 +2,12 @@ import os
 import json
 
 from dotenv import load_dotenv
-from google import genai
+from groq import Groq
 
 load_dotenv()
 
-client = genai.Client(
-    api_key=os.getenv("GEMINI_API_KEY")
+client = Groq(
+    api_key=os.getenv("GROQ_API_KEY")
 )
 
 
@@ -78,15 +78,31 @@ Frustrated User:
 
 Business Executive:
 - business impact
-- timelines
 - operations
+- timelines
+- revenue
+- executive reporting
+- risk assessment
+- customer impact
+IMPORTANT:
 
-Return JSON only:
+If the message discusses:
+- business impact
+- operational impact
+- timelines
+- revenue
+- outcomes
+
+then classify as Business Executive.
+
+Return ONLY valid JSON.
+
+Example:
 
 {{
-    "persona":"",
-    "confidence":0.0,
-    "reasoning":""
+    "persona":"Technical Expert",
+    "confidence":0.95,
+    "reasoning":"Uses API authentication terminology"
 }}
 
 Message:
@@ -95,23 +111,33 @@ Message:
 
     try:
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt
+        response = client.chat.completions.create(
+            model="llama-3.3-70b-versatile",
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0
         )
 
+        result = response.choices[0].message.content
+
         cleaned_text = (
-            response.text
+            result
             .replace("```json", "")
             .replace("```", "")
             .strip()
         )
 
+        print("Groq persona classification successful")
+
         return json.loads(cleaned_text)
 
     except Exception as e:
 
-        print(f"Gemini Error: {e}")
+        print(f"Groq Error: {e}")
         print("Using fallback classifier...")
 
         return fallback_persona(user_message)
