@@ -24,7 +24,7 @@ def should_escalate(
 
             return True, "Sensitive Issue"
 
-    if retrieval_score < 0.45:
+    if retrieval_score < 0.20:
 
         return True, "Low Retrieval Confidence"
 
